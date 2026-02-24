@@ -255,7 +255,7 @@ function processAll() {
     const vgv = fVendas.length ? fVendas.reduce((s, x) => s + gVgv(x), 0) : fReservas.reduce((s, x) => s + gVgv(x), 0);
     const nVis = fLeads.filter(x =>
         /visit/i.test(x.situacao_lead || x.situacao || '') || x.visitou === true || x.visita === true || +x.qtd_visitas > 0 || +x.visitas > 0
-    ).length || fSims.length || Math.round(nL * 0.6);
+    ).length || 0;
     const corrSet = new Set([...fLeads, ...fReservas, ...fVendas].map(gCorrId).filter(Boolean));
 
     st('m-leads', fN(nL)); st('m-visitas', fN(nVis));
@@ -448,19 +448,21 @@ function renderIndCharts(c) {
         }
     });
     if (S.ranking.length > 1) {
-        const avg = f => S.ranking.reduce((s, x) => s + (x[f] || 0), 0) / S.ranking.length || 1;
-        const n = (v, f) => Math.min(+(v / avg(f) * 100).toFixed(0), 200);
+        const avg = f => +(S.ranking.reduce((s, x) => s + (x[f] || 0), 0) / S.ranking.length).toFixed(1);
+        const avgL = avg('l'), avgS = avg('s'), avgR = avg('r'), avgV = avg('v'), avgVgv = avg('vgv');
+        // Scale VGV to same order of magnitude as other metrics for radar readability
+        const vgvScale = Math.max(c.vgv, avgVgv) > 0 ? Math.max(c.l, c.s, c.r, c.v, avgL, avgS, avgR, avgV, 1) / Math.max(c.vgv, avgVgv, 1) : 0;
         S.ch.ir = new Chart(document.getElementById('i-radar').getContext('2d'), {
             type: 'radar',
             data: {
-                labels: ['Leads', 'Atendimentos', 'Reservas', 'Vendas', 'VGV'],
+                labels: ['Leads', 'Atendimentos', 'Reservas', 'Vendas', `VGV (${fVgvFmt(c.vgv)})`],
                 datasets: [
                     {
-                        label: c.nome, data: [n(c.l, 'l'), n(c.s, 's'), n(c.r, 'r'), n(c.v, 'v'), n(c.vgv, 'vgv')],
+                        label: c.nome, data: [c.l, c.s, c.r, c.v, +(c.vgv * vgvScale).toFixed(1)],
                         borderColor: GT, backgroundColor: hexToRgba(GT, .15), pointBackgroundColor: GT
                     },
                     {
-                        label: 'Média Equipe', data: [100, 100, 100, 100, 100],
+                        label: 'Média Equipe', data: [avgL, avgS, avgR, avgV, +(avgVgv * vgvScale).toFixed(1)],
                         borderColor: GDK, backgroundColor: hexToRgba(GDK, .08), pointBackgroundColor: GDK
                     }
                 ]
@@ -469,7 +471,7 @@ function renderIndCharts(c) {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
                     r: {
-                        beginAtZero: true, max: 200, grid: { color: THEME.surface2 || '#2a2a2a' }, angleLines: { color: THEME.surface2 || '#2a2a2a' },
+                        beginAtZero: true, grid: { color: THEME.surface2 || '#2a2a2a' }, angleLines: { color: THEME.surface2 || '#2a2a2a' },
                         pointLabels: { color: TXS, font: { size: 11, weight: '700' } }, ticks: { color: TXS, backdropColor: 'transparent' }
                     }
                 },
