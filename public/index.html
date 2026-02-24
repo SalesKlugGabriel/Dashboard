@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard de Vendas</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #121212;
+      --s1: #1e1e1e;
+      --s2: #2a2a2a;
+      --gt: #E87722;
+      --gdk: #c85e10;
+      --gok: #2ecc71;
+      --tx: #e0e0e0;
+      --txm: #888;
+      --txs: #888;
+      --r: 8px
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html,
+    body {
+      background: var(--bg);
+      color: var(--tx);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      overflow-x: hidden;
+      scroll-behavior: smooth
+    }
+
+    a {
+      color: var(--gt)
+    }
+
+    /* HEADER */
+    .hd {
+      background: #181818;
+      border-bottom: 1px solid var(--s2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .8rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 90
+    }
+
+    .hd .logo {
+      display: flex;
+      align-items: center;
+      gap: .8rem
+    }
+
+    .hd h1 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--gt);
+      letter-spacing: 1px
+    }
+
+    .hd h1 span {
+      display: block;
+      font-size: .55rem;
+      color: var(--txm);
+      font-weight: 400;
+      letter-spacing: 2px;
+      text-transform: uppercase
+    }
+
+    .hd .hright {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      flex-wrap: wrap
+    }
+
+    .hchip {
+      background: var(--s1);
+      border: 1px solid var(--s2);
+      border-radius: 20px;
+      padding: .3rem .9rem;
+      font-size: .75rem;
+      color: var(--txm);
+      cursor: pointer;
+      white-space: nowrap
+    }
+
+    .hchip:hover {
+      border-color: var(--gt)
+    }
+
+    .hbtn {
+      background: var(--s1);
+      border: 1px solid var(--s2);
+      border-radius: var(--r);
+      padding: .4rem .7rem;
+      cursor: pointer;
+      color: var(--txm);
+      font-size: .85rem;
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      transition: .2s
+    }
+
+    .hbtn:hover,
+    .hbtn.on {
+      color: var(--gt);
+      border-color: var(--gt)
+    }
+
+    /* NAV TABS */
+    .nav {
+      background: var(--s1);
+      border-bottom: 1px solid var(--s2);
+      display: flex;
+      padding: 0 2rem;
+      gap: .1rem
+    }
+
+    .nt {
+      padding: .7rem 1.4rem;
+      cursor: pointer;
+      font-size: .85rem;
+      color: var(--txm);
+      border-bottom: 2px solid transparent;
+      transition: .2s
+    }
+
+    .nt:hover {
+      color: var(--tx)
+    }
+
+    .nt.on {
+      color: var(--gt);
+      border-color: var(--gt);
+      font-weight: 600
+    }
+
+    /* ALERT BAR */
+    .abar {
+      display: flex;
+      align-items: center;
+      padding: .5rem 2rem;
+      gap: .5rem;
+      background: var(--s1);
+      border-bottom: 1px solid var(--s2)
+    }
+
+    .adot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: .3s
+    }
+
+    .adot.ok {
+      background: var(--gok);
+      box-shadow: 0 0 6px var(--gok)
+    }
+
+    .adot.load {
+      background: #f1c40f;
+      box-shadow: 0 0 6px #f1c40f;
+      animation: pulse 1s infinite
+    }
+
+    .adot.err {
+      background: #e74c3c;
+      box-shadow: 0 0 6px #e74c3c
+    }
+
+    @keyframes pulse {
+      50% {
+        opacity: .4
+      }
+    }
+
+    .albl {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--txm)
+    }
+
+    .adet {
+      font-size: .72rem;
+      color: var(--txs);
+      margin-left: .4rem
+    }
+
+    .alast {
+      margin-left: auto;
+      font-size: .7rem;
+      color: var(--txs)
+    }
+
+    /* METRICS */
+    .mg {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: .8rem;
+      padding: 1rem 2rem
+    }
+
+    .mc {
+      background: var(--s1);
+      border: 1px solid var(--s2);
+      border-radius: var(--r);
+      padding: 1rem 1.2rem;
+      position: relative;
+      overflow: hidden;
+      transition: .2s
+    }
+
+    .mc:hover {
+      border-color: var(--gt);
+      transform: translateY(-2px)
+    }
+
+    .mc .mcl {
+      font-size: .65rem;
+      text-transform: uppercase;
+      color: var(--txm);
+      letter-spacing: 1.5px;
+      font-weight: 600;
+      margin-bottom: .4rem
+    }
+
+    .mc .mcv {
+      font-size: 1.5rem;
+      font-weight: 700
+    }
+
+    .mc .mcs {
+      font-size: .68rem;
+      color: var(--txm);
+      margin-top: .15rem
+    }
+
+    .mc::after {
+      content: '';
+      position: absolute;
+      right: -12px;
+      bottom: -12px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      opacity: .08
+    }
+
+    .mc.gt::after {
+      background: var(--gt)
+    }
+
+    .mc.ok::after {
+      background: var(--gok)
+    }
+
+    .mc.dk::after {
+      background: var(--gdk)
+    }
+
+    /* CARDS */
+    .sec {
+      padding: 0 2rem 1.5rem
+    }
+
+    .sec h2 {
+      font-size: .95rem;
+      font-weight: 700;
+      color: var(--txm);
+      margin: .6rem 0
+    }
+
+    .cg {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem
+    }
+
+    .cd {
+      background: var(--s1);
+      border: 1px solid var(--s2);
+      border-radius: var(--r);
+      padding: 1.2rem
+    }
+
+    .cd h3 {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--txm);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: .6rem
+    }
+
+    .cbox {
+      position: relative;
+      height: 280px
+    }
+
+    /* PERIOD BAR */
+    .pbar {
+      display: flex;
+      gap: .25rem;
+      padding: .5rem 2rem;
+      background: var(--s1);
+      border-bottom: 1px solid var(--s2);
+      flex-wrap: wrap
+    }
+
+    .pb {
+      background: transparent;
+      border: 1px solid var(--s2);
+      border-radius: 20px;
+      padding: .35rem 1rem;
+      font-size: .75rem;
+      color: var(--txm);
+      cursor: pointer;
+      transition: .2s
+    }
+
+    .pb:hover {
+      border-color: var(--gt);
+      color: var(--tx)
+    }
+
+    .pb.on {
+      background: var(--gt);
+      color: #fff;
+      border-color: var(--gt);
+      font-weight: 600
+    }
+
+    /* RANKING TABLE */
+    .tbl-wrap {
+      overflow-x: auto;
+      max-height: 500px;
+      overflow-y: auto
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: var(--s1);
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--txm);
+      padding: .6rem .8rem;
+      text-align: left;
+      border-bottom: 2px solid var(--gt)
+    }
+
+    tbody td {
+      padding: .6rem .8rem;
+      border-bottom: 1px solid var(--s2);
+      font-size: .82rem;
+      white-space: nowrap
+    }
+
+    tbody tr:hover {
+      background: rgba(232, 119, 34, .06)
+    }
+
+    .badge {
+      display: inline-block;
+      padding: .15rem .55rem;
+      border-radius: 12px;
+      font-size: .7rem;
+      font-weight: 600
+    }
+
+    .b-gt {
+      background: rgba(232, 119, 34, .18);
+      color: var(--gt)
+    }
+
+    .b-ok {
+      background: rgba(46, 204, 113, .18);
+      color: var(--gok)
+    }
+
+    .rc {
+      background: var(--s1);
+      border: 1px solid var(--s2);
+      border-radius: var(--r);
+      padding: 1rem;
+      margin-bottom: .6rem;
+      display: none
+    }
+
+    @media(max-width:700px) {
+      table {
+        display: none
+      }
+
+      .rc {
+        display: block
+      }
+    }
+
+    .rc-h {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: .6rem
+    }
+
+    .rc-name {
+      font-weight: 700;
+      font-size: .9rem
+    }
+
+    .rc-bdg {
+      font-size: 1.1rem
+    }
+
+    .rc-s {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .5rem
+    }
+
+    .rsl {
+      font-size: .65rem;
+      color: var(--txm);
+      text-transform: uppercase
+    }
+
+    .rsv {
+      font-size: 1rem;
+      font-weight: 600
+    }
+
+    .r1 {
+      border-color: gold
+    }
+
+    .r2 {
+      border-color: silver
+    }
+
+    .r3 {
+      border-color: #cd7f32
+    }
+
+    /* LOADING */
+    .rank-load {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      padding: 3rem;
+      color: var(--txm);
+      font-size: .85rem
+    }
+
+    .ldsk {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--s2);
+      border-top-color: var(--gt);
+      border-radius: 50%;
+      animation: spin .8s linear infinite
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    /* TAB CONTENT */
+    .tabc {
+      display: none
+    }
+
+    .tabc.on {
+      display: block
+    }
+
+    /* INDIVIDUAL */
+    .ind-top {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap
+    }
+
+    .ind-sel {
+      background: var(--s1);
+      border: 1px solid var(--s2);
+      border-radius: var(--r);
+      padding: .5rem 1rem;
+      color: var(--tx);
+      font-size: .85rem;
+      min-width: 220px
+    }
+
+    .ind-hdr {
+      margin-bottom: 1rem
+    }
+
+    .ind-hdr h2 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--gt);
+      margin-bottom: .15rem
+    }
+
+    .ind-hdr .sub {
+      font-size: .78rem;
+      color: var(--txm)
+    }
+
+    .ind-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5rem 2rem;
+      color: var(--txm);
+      font-size: .9rem;
+      text-align: center
+    }
+
+    /* SIDEBAR */
+    .ov {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      z-index: 99;
+      display: none
+    }
+
+    .ov.on {
+      display: block
+    }
+
+    .sb {
+      position: fixed;
+      top: 0;
+      right: -380px;
+      width: 360px;
+      height: 100%;
+      background: var(--s1);
+      border-left: 1px solid var(--s2);
+      z-index: 100;
+      transition: .3s;
+      overflow-y: auto;
+      padding: 1.5rem
+    }
+
+    .sb.on {
+      right: 0
+    }
+
+    .sb h3 {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      font-size: 1rem
+    }
+
+    .sb h3 button {
+      background: 0;
+      border: 0;
+      color: var(--txm);
+      cursor: pointer;
+      font-size: 1.2rem
+    }
+
+    .sbg {
+      margin-bottom: 1.2rem
+    }
+
+    .sbg label {
+      display: block;
+      font-size: .72rem;
+      text-transform: uppercase;
+      color: var(--txm);
+      letter-spacing: 1.5px;
+      margin-bottom: .35rem
+    }
+
+    .sbg input,
+    .sbg select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--s2);
+      border-radius: var(--r);
+      padding: .5rem;
+      color: var(--tx);
+      font-size: .85rem
+    }
+
+    .qbtns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .3rem;
+      margin-bottom: 1rem
+    }
+
+    .qbtn {
+      background: var(--bg);
+      border: 1px solid var(--s2);
+      border-radius: 20px;
+      padding: .3rem .8rem;
+      font-size: .72rem;
+      color: var(--txm);
+      cursor: pointer
+    }
+
+    .qbtn:hover,
+    .qbtn.on {
+      border-color: var(--gt);
+      color: var(--gt)
+    }
+
+    .sbtn {
+      width: 100%;
+      padding: .6rem;
+      border: 0;
+      border-radius: var(--r);
+      font-weight: 600;
+      cursor: pointer;
+      font-size: .85rem;
+      margin-bottom: .5rem
+    }
+
+    .sbtn-gt {
+      background: var(--gt);
+      color: #fff
+    }
+
+    .sbtn-gt:hover {
+      background: var(--gdk)
+    }
+
+    .sbtn-out {
+      background: var(--bg);
+      color: var(--txm);
+      border: 1px solid var(--s2)
+    }
+
+    .sbtn-out:hover {
+      border-color: var(--gt)
+    }
+
+    /* CONFIG MODAL */
+    .modal-ov {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .7);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .modal {
+      background: var(--s1);
+      border: 1px solid var(--s2);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 400px;
+      width: 90%
+    }
+
+    .modal h3 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      color: var(--gt)
+    }
+
+    .modal .sbg input {
+      margin-bottom: .4rem
+    }
+
+    /* TV MODE */
+    .tvbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--s2);
+      z-index: 200;
+      display: none
+    }
+
+    .tvbar.on {
+      display: block
+    }
+
+    .tvfill {
+      height: 100%;
+      width: 0;
+      background: var(--gt);
+      transition: width .1s linear
+    }
+
+    .tvdots {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      gap: 6px;
+      z-index: 200
+    }
+
+    .tvdots.on {
+      display: flex
+    }
+
+    .tvd {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--s2)
+    }
+
+    .tvd.on {
+      background: var(--gt)
+    }
+
+    .fab-exit {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--gt);
+      color: #fff;
+      border: 0;
+      font-size: 1.3rem;
+      cursor: pointer;
+      z-index: 201;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, .4)
+    }
+
+    .fab-exit.on {
+      display: flex
+    }
+
+    /* ERR */
+    .err-box,
+    .cors-notice {
+      background: rgba(180, 40, 40, .15);
+      border: 1px solid rgba(180, 40, 40, .3);
+      border-radius: var(--r);
+      padding: 1rem 1.5rem;
+      margin: 1rem 2rem;
+      font-size: .82rem;
+      color: #f0a0a0
+    }
+
+    .err-box strong,
+    .cors-notice strong {
+      display: block;
+      margin-bottom: .3rem;
+      color: #f06060
+    }
+
+    /* RESPONSIVE */
+    @media(max-width:900px) {
+      .hd {
+        padding: .6rem 1rem
+      }
+
+      .mg {
+        padding: .6rem 1rem
+      }
+
+      .sec {
+        padding: 0 1rem 1rem
+      }
+
+      .cg {
+        grid-template-columns: 1fr
+      }
+
+      .pbar {
+        padding: .5rem 1rem
+      }
+
+      .nav {
+        padding: 0 1rem
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header class="hd">
+    <div class="logo">
+      <div id="brand-logo">
+        <h1 id="brand-name">DASHBOARD</h1>
+      </div>
+      <span id="brand-tagline"
+        style="display:block;font-size:.55rem;color:var(--txm);font-weight:400;letter-spacing:2px;text-transform:uppercase"></span>
+      <span id="brand-title" style="color:var(--txm);font-size:.85rem;margin-left:1rem;font-weight:300">DASHBOARD DE
+        VENDAS</span>
+    </div>
+    <div class="hright">
+      <span class="hchip" id="pchip" onclick="openSB('sb-filter')">📅 Últimos 30 dias</span>
+      <span id="hplbl" style="display:none">Últimos 30 dias</span>
+      <button class="hbtn" onclick="openSB('sb-filter')">🔍 Filtrar</button>
+      <button class="hbtn" id="btn-tv" onclick="tvActive?stopTV():startTV()">📺 Modo TV</button>
+      <button class="hbtn" onclick="showConfig()">⚙</button>
+      <button class="hbtn" onclick="loadAllData()">Atualizar</button>
+    </div>
+  </header>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nt on" data-tab="geral">Visão Geral</div>
+    <div class="nt" data-tab="individual">Por Corretor</div>
+  </nav>
+
+  <!-- ALERT BAR -->
+  <div class="abar" id="abar">
+    <div class="adot load" id="adot"></div>
+    <span class="albl" id="albl">Inicializando...</span>
+    <span class="adet" id="adet"></span>
+    <span class="alast" id="alast"></span>
+  </div>
+
+  <!-- PERIOD BAR -->
+  <div class="pbar" id="mg-top">
+    <button class="pb" data-days="7">7 dias</button>
+    <button class="pb on" data-days="30">30 dias</button>
+    <button class="pb" data-days="45">45 dias</button>
+    <button class="pb" data-days="90">90 dias</button>
+    <button class="pb" data-days="180">180 dias</button>
+  </div>
+
+  <!-- TAB: GERAL -->
+  <div class="tabc on" id="tab-geral">
+    <div class="mg">
+      <div class="mc gt">
+        <div class="mcl">LEADS (ATENDIMENTOS)</div>
+        <div class="mcv" id="m-leads">…</div>
+      </div>
+      <div class="mc gt">
+        <div class="mcl">VISITAS AO ESTANDE</div>
+        <div class="mcv" id="m-visitas">…</div>
+      </div>
+      <div class="mc gt">
+        <div class="mcl">SIMULAÇÕES</div>
+        <div class="mcv" id="m-sim">…</div>
+      </div>
+      <div class="mc gt">
+        <div class="mcl">RESERVAS</div>
+        <div class="mcv" id="m-res">…</div>
+      </div>
+      <div class="mc ok">
+        <div class="mcl">VENDAS CONFIRMADAS</div>
+        <div class="mcv" id="m-vend">…</div>
+      </div>
+      <div class="mc dk">
+        <div class="mcl">TAXA DE CONVERSÃO</div>
+        <div class="mcv" id="m-taxa">…</div>
+        <div class="mcs">Reservas / Leads</div>
+      </div>
+      <div class="mc gt">
+        <div class="mcl">VGV TOTAL</div>
+        <div class="mcv" id="m-vgv">…</div>
+      </div>
+      <div class="mc gt">
+        <div class="mcl">CORRETORES ATIVOS</div>
+        <div class="mcv" id="m-corr">…</div>
+        <div class="mcs">No período</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="cg">
+        <div class="cd">
+          <h3>Funil de Vendas</h3>
+          <div class="cbox"><canvas id="c-funil"></canvas></div>
+        </div>
+        <div class="cd">
+          <h3>Tendência Semanal</h3>
+          <div class="cbox"><canvas id="c-trend"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="cg">
+        <div class="cd">
+          <h3>Reservas por Empreendimento</h3>
+          <div class="cbox"><canvas id="c-emp"></canvas></div>
+        </div>
+        <div class="cd">
+          <h3>Leads por Origem</h3>
+          <div class="cbox"><canvas id="c-ori"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <h2>Ranking de Corretores</h2>
+      <div class="cd">
+        <div class="rank-load" id="rank-load">
+          <div class="ldsk"></div><span>Carregando ranking...</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Corretor</th>
+                <th>Leads</th>
+                <th>Atendim.</th>
+                <th>Reservas</th>
+                <th>Vendas</th>
+                <th>VGV</th>
+                <th>Taxa</th>
+              </tr>
+            </thead>
+            <tbody id="rank-tbody"></tbody>
+          </table>
+        </div>
+        <div id="rank-mob"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: INDIVIDUAL -->
+  <div class="tabc" id="tab-individual">
+    <div class="sec" style="padding-top:1rem">
+      <div class="ind-top">
+        <select class="ind-sel" id="ind-sel" onchange="loadInd(this.value)">
+          <option value="">Selecione um corretor</option>
+        </select>
+      </div>
+      <div id="ind-empty" class="ind-empty" style="display:flex">
+        <div>📊 Selecione um corretor acima para ver sua performance individual.</div>
+      </div>
+      <div id="ind-c" style="display:none">
+        <div class="ind-hdr">
+          <h2 id="ind-nome"></h2>
+          <div class="sub" id="ind-per"></div>
+        </div>
+        <div class="mg" style="padding:0 0 1rem">
+          <div class="mc gt">
+            <div class="mcl">Leads</div>
+            <div class="mcv" id="i-l">0</div>
+          </div>
+          <div class="mc gt">
+            <div class="mcl">Atendimentos</div>
+            <div class="mcv" id="i-s">0</div>
+          </div>
+          <div class="mc gt">
+            <div class="mcl">Reservas</div>
+            <div class="mcv" id="i-r">0</div>
+          </div>
+          <div class="mc ok">
+            <div class="mcl">Vendas</div>
+            <div class="mcv" id="i-v">0</div>
+          </div>
+          <div class="mc dk">
+            <div class="mcl">Taxa Conversão</div>
+            <div class="mcv" id="i-tx">0%</div>
+          </div>
+          <div class="mc gt">
+            <div class="mcl">VGV</div>
+            <div class="mcv" id="i-vgv">R$ 0</div>
+          </div>
+          <div class="mc gt">
+            <div class="mcl">Ticket Médio</div>
+            <div class="mcv" id="i-tkt">R$ 0</div>
+          </div>
+          <div class="mc gt">
+            <div class="mcl">Ranking</div>
+            <div class="mcv" id="i-rnk">—</div>
+          </div>
+        </div>
+        <div class="cg">
+          <div class="cd">
+            <h3>Funil Individual</h3>
+            <div class="cbox"><canvas id="i-funil"></canvas></div>
+          </div>
+          <div class="cd">
+            <h3>Comparativo vs Equipe</h3>
+            <div class="cbox"><canvas id="i-radar"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY & SIDEBARS -->
+  <div class="ov" id="ov"></div>
+
+  <div class="sb" id="sb-filter">
+    <h3>Filtros <button onclick="closeSB('sb-filter')">✕</button></h3>
+    <div class="qbtns">
+      <button class="qbtn" data-days="7">7 dias</button>
+      <button class="qbtn on" data-days="30">30 dias</button>
+      <button class="qbtn" data-days="45">45 dias</button>
+      <button class="qbtn" data-days="90">90 dias</button>
+      <button class="qbtn" data-days="180">180 dias</button>
+    </div>
+    <div class="sbg"><label>Data início</label><input type="date" id="f-from"></div>
+    <div class="sbg"><label>Data fim</label><input type="date" id="f-to" disabled></div>
+    <div class="sbg"><label>Corretor / Gestor</label><select id="f-gerente">
+        <option value="">Todos</option>
+      </select></div>
+    <button class="sbtn sbtn-gt" onclick="applyFilter()">Aplicar</button>
+    <button class="sbtn sbtn-out" onclick="cleanFilter()">Limpar Filtros</button>
+  </div>
+
+  <!-- CONFIG MODAL -->
+  <div class="modal-ov" id="configModal" style="display:none">
+    <div class="modal">
+      <h3>⚙ Configuração</h3>
+      <div class="sbg"><label>E-mail CV CRM</label><input type="email" id="cfg-email" value=""></div>
+      <button class="sbtn sbtn-gt" onclick="saveConfig()">Salvar e Atualizar</button>
+      <button class="sbtn sbtn-out"
+        onclick="document.getElementById('configModal').style.display='none'">Fechar</button>
+    </div>
+  </div>
+
+  <!-- TV MODE -->
+  <div class="tvbar" id="tvbar">
+    <div class="tvfill" id="tvfill"></div>
+  </div>
+  <div class="tvdots" id="tvdots"></div>
+  <button class="fab-exit" id="fab-exit" onclick="stopTV()">✕</button>
+
+  <!-- FAB -->
+  <div style="position:fixed;bottom:24px;right:24px;z-index:50" id="fab-main">
+    <button
+      style="width:48px;height:48px;border-radius:50%;background:var(--gt);color:#fff;border:0;font-size:1.3rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4)"
+      onclick="loadAllData()">↻</button>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
