@@ -79,12 +79,12 @@ function checkConfig() { return true; }
 // ════════════════════════════════════════════════
 // API HELPERS
 // ════════════════════════════════════════════════
-const hdrs = () => ({ 'email': S.email, 'token': API.token || '', 'Content-Type': 'application/json' });
+// Auth headers são injetados pelo server.js — browser não precisa enviar
 
 async function apiFetch(path, opts = {}) {
     const u = new URL(window.location.origin + path);
     if (opts.params) Object.entries(opts.params).forEach(([k, v]) => u.searchParams.set(k, String(v)));
-    const r = await fetch(u.toString(), { method: opts.method || 'GET', headers: hdrs() });
+    const r = await fetch(u.toString(), { method: opts.method || 'GET' });
     if (!r.ok) {
         const body = await r.text().catch(() => '');
         throw new Error(`HTTP ${r.status} em ${path}: ${body.substring(0, 200)}`);
@@ -104,15 +104,6 @@ async function loadLeads() {
     } catch (e) { console.warn('Leads error:', e); S.leads = []; }
 }
 
-async function loadAtendimentos() {
-    setStatus('Buscando Atendimentos...', '', 'load');
-    try {
-        const data = await apiFetch('/api/cvio/listar_atendimentos', { params: { registros_por_pagina: 500 } });
-        const items = data.atendimentos || data.data || (Array.isArray(data) ? data : []);
-        S.sims = items;
-        setStatus('Atendimentos carregados', `${items.length} registros`, 'load');
-    } catch (e) { console.warn('Atendimentos error:', e); S.sims = []; }
-}
 
 async function loadReservas() {
     setStatus('Buscando Reservas...', '', 'load');
@@ -193,9 +184,9 @@ async function loadAllData() {
     document.querySelectorAll('.err-box,.cors-notice').forEach(e => e.remove());
     try {
         await loadLeads();
-        await loadAtendimentos();
         await loadReservas();
         await loadUsers();
+        S.sims = []; // Endpoint de atendimentos não disponível nesta versão da API
         setStatus('Processando dados...', '', 'load');
         processAll();
         setStatus(

@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 // ── Configuração: lê de server-config.json ──
-let serverConfig = { domain: 'gthome.cvcrm.com.br', port: 3000 };
+let serverConfig = { domain: 'gthome.cvcrm.com.br', port: 3000, email: '', token: '' };
 try {
     const cfgPath = path.join(__dirname, 'server-config.json');
     if (fs.existsSync(cfgPath)) {
@@ -18,6 +18,8 @@ try {
 const DOMAIN = serverConfig.domain;
 const PORT = process.env.PORT || serverConfig.port || 3000;
 const TARGET = `https://${DOMAIN}`;
+const AUTH_EMAIL = serverConfig.email;
+const AUTH_TOKEN = serverConfig.token;
 
 const app = express();
 
@@ -25,17 +27,24 @@ const app = express();
 app.use(cors());
 
 // ── Proxy: /api/* → https://{DOMAIN}/api/* ──
+// Auth headers são injetados server-side para evitar CORS preflight issues
 app.use('/api', createProxyMiddleware({
     target: TARGET,
     changeOrigin: true,
     secure: true,
     pathRewrite: { '^/api': '/api' },
     onProxyReq: (proxyReq, req) => {
+        // Injeta headers de autenticação do CV CRM no server-side
+        // Isso evita que o browser precise enviar headers custom (que causam CORS preflight)
+        if (AUTH_EMAIL) proxyReq.setHeader('email', AUTH_EMAIL);
+        if (AUTH_TOKEN) proxyReq.setHeader('token', AUTH_TOKEN);
+        proxyReq.setHeader('Content-Type', 'application/json');
+
         console.log(`[PROXY] ${req.method} ${req.originalUrl} → ${TARGET}${req.originalUrl}`);
     },
     onProxyRes: (proxyRes) => {
         proxyRes.headers['access-control-allow-origin'] = '*';
-        proxyRes.headers['access-control-allow-headers'] = 'email, token, Content-Type, Authorization';
+        proxyRes.headers['access-control-allow-headers'] = '*';
         proxyRes.headers['access-control-allow-methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
     },
     onError: (err, req, res) => {
@@ -62,7 +71,9 @@ app.listen(PORT, () => {
     console.log('  ╚══════════════════════════════════════════════════╝');
     console.log('');
     console.log(`  Domínio: ${DOMAIN}`);
+    console.log(`  Auth:    ${AUTH_EMAIL || '(não configurado)'}`);
     console.log(`  Proxy:   /api/* → ${TARGET}/api/*`);
+    console.log('  Headers: email/token injetados no server-side');
     console.log('  CORS:    habilitado para todas as origens');
     console.log('');
 });
