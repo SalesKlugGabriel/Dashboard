@@ -1292,11 +1292,29 @@ function showErr(err, isCORS) {
 }
 
 // ════════════════════════════════════════════════
-// AUTO-REFRESH
+// AUTO-REFRESH — 07:00 diário + a cada 60min
 // ════════════════════════════════════════════════
 function setupAutoRefresh() {
-    const mins = OPTS.autoRefreshMin || 0;
-    if (mins > 0) setInterval(() => loadAllData(true), mins * 60 * 1000);
+    // Atualiza a cada 60 minutos (força re-fetch)
+    setInterval(() => loadAllData(true), 60 * 60 * 1000);
+
+    // Às 07:00 todos os dias: limpa cache e recarrega tudo do zero
+    scheduleDaily(7, 0, () => {
+        LS.del(CACHE_KEY);
+        loadAllData(true);
+    });
+}
+
+function scheduleDaily(hour, minute, fn) {
+    const now  = new Date();
+    const next = new Date();
+    next.setHours(hour, minute, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1); // já passou hoje → amanhã
+    const msUntil = next - now;
+    setTimeout(() => {
+        fn();
+        setInterval(fn, 24 * 60 * 60 * 1000); // repete diariamente
+    }, msUntil);
 }
 
 // ════════════════════════════════════════════════

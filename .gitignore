@@ -1,4 +1,6 @@
 node_modules/
 server-config.json
+auth.json
+.session_secret
 .env
 *.log

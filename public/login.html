@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard — Acesso</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html, body {
+      min-height: 100vh;
+      background: #121212;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 420px;
+      padding: 1.5rem;
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .brand h1 {
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: #E87722;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .brand p {
+      font-size: .72rem;
+      color: #888;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: .25rem;
+    }
+
+    .card {
+      background: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 2rem 2rem 1.5rem;
+    }
+    .card h2 {
+      font-size: .9rem;
+      font-weight: 700;
+      color: #e0e0e0;
+      margin-bottom: 1.5rem;
+      padding-bottom: .75rem;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .card h2 span {
+      font-size: .7rem;
+      font-weight: 400;
+      color: #888;
+      display: block;
+      margin-top: .2rem;
+    }
+
+    .field {
+      margin-bottom: 1rem;
+    }
+    .field label {
+      display: block;
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #888;
+      margin-bottom: .4rem;
+    }
+    .field input {
+      width: 100%;
+      background: #121212;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: .65rem .85rem;
+      color: #e0e0e0;
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .field input:focus { border-color: #E87722 }
+    .field input::placeholder { color: #555 }
+
+    .hint {
+      font-size: .68rem;
+      color: #666;
+      margin-top: .3rem;
+    }
+
+    .divider {
+      height: 1px;
+      background: #2a2a2a;
+      margin: 1.2rem 0;
+    }
+
+    .section-label {
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #E87722;
+      font-weight: 700;
+      margin-bottom: .8rem;
+    }
+
+    .btn {
+      width: 100%;
+      padding: .75rem;
+      border: 0;
+      border-radius: 8px;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+      margin-top: .5rem;
+    }
+    .btn-primary { background: #E87722; color: #fff }
+    .btn-primary:hover { background: #c85e10 }
+    .btn-primary:disabled { background: #555; cursor: default }
+
+    .error {
+      background: rgba(231, 76, 60, .15);
+      border: 1px solid rgba(231, 76, 60, .4);
+      border-radius: 8px;
+      padding: .65rem .85rem;
+      font-size: .82rem;
+      color: #f08080;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .error.on { display: block }
+
+    .success {
+      background: rgba(46, 204, 113, .15);
+      border: 1px solid rgba(46, 204, 113, .35);
+      border-radius: 8px;
+      padding: .65rem .85rem;
+      font-size: .82rem;
+      color: #7deba6;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .success.on { display: block }
+
+    .ldsk {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: .4rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg) } }
+
+    .footer {
+      text-align: center;
+      font-size: .68rem;
+      color: #555;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="brand">
+    <h1>Dashboard de Vendas</h1>
+    <p>CV CRM</p>
+  </div>
+
+  <div class="card">
+    <!-- Mensagens -->
+    <div class="error" id="err"></div>
+    <div class="success" id="succ"></div>
+
+    <!-- FORM: Primeiro acesso (setup) -->
+    <form id="form-setup" style="display:none" onsubmit="doSetup(event)">
+      <h2>Primeiro Acesso
+        <span>Configure as credenciais e crie sua senha</span>
+      </h2>
+
+      <div class="section-label">Dados do CV CRM</div>
+
+      <div class="field">
+        <label>Domínio</label>
+        <input type="text" id="s-domain" placeholder="suaempresa.cvcrm.com.br" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>E-mail de acesso</label>
+        <input type="email" id="s-email" placeholder="usuario@empresa.com">
+      </div>
+      <div class="field">
+        <label>Token da API</label>
+        <input type="password" id="s-token" placeholder="Token gerado em Integrações > APIs">
+        <div class="hint">Necessário apenas no primeiro acesso. Salvo com segurança no servidor.</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-label">Criar Senha do Dashboard</div>
+
+      <div class="field">
+        <label>Nova senha</label>
+        <input type="password" id="s-pass" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="field">
+        <label>Confirmar senha</label>
+        <input type="password" id="s-pass2" placeholder="Repita a senha">
+      </div>
+
+      <button class="btn btn-primary" type="submit" id="btn-setup">Configurar e Acessar</button>
+    </form>
+
+    <!-- FORM: Login subsequente -->
+    <form id="form-login" style="display:none" onsubmit="doLogin(event)">
+      <h2>Acesso ao Dashboard
+        <span>Insira suas credenciais</span>
+      </h2>
+
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="l-email" placeholder="usuario@empresa.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="l-pass" placeholder="Sua senha do dashboard" autocomplete="current-password">
+      </div>
+
+      <button class="btn btn-primary" type="submit" id="btn-login">Entrar</button>
+    </form>
+
+    <!-- Loading state -->
+    <div id="loading" style="text-align:center;padding:2rem;color:#888;font-size:.85rem">
+      <span class="ldsk"></span> Carregando...
+    </div>
+  </div>
+
+  <div class="footer">Dashboard de Vendas &mdash; CV CRM</div>
+</div>
+
+<script>
+  function showErr(msg) {
+    const e = document.getElementById('err');
+    e.textContent = msg; e.classList.add('on');
+    document.getElementById('succ').classList.remove('on');
+  }
+  function showSucc(msg) {
+    const s = document.getElementById('succ');
+    s.textContent = msg; s.classList.add('on');
+    document.getElementById('err').classList.remove('on');
+  }
+  function clearMsgs() {
+    document.getElementById('err').classList.remove('on');
+    document.getElementById('succ').classList.remove('on');
+  }
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    if (loading) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="ldsk"></span> Aguarde...';
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = btnId === 'btn-setup' ? 'Configurar e Acessar' : 'Entrar';
+    }
+  }
+
+  // Detecta se é primeiro acesso ou login normal
+  async function init() {
+    try {
+      const r = await fetch('/auth/status');
+      const data = await r.json();
+      document.getElementById('loading').style.display = 'none';
+      if (data.authenticated) {
+        window.location.href = '/';
+        return;
+      }
+      if (data.setup) {
+        document.getElementById('form-setup').style.display = 'block';
+      } else {
+        document.getElementById('form-login').style.display = 'block';
+      }
+    } catch {
+      document.getElementById('loading').innerHTML = 'Erro ao conectar com o servidor.';
+    }
+  }
+
+  async function doSetup(e) {
+    e.preventDefault();
+    clearMsgs();
+    const domain  = document.getElementById('s-domain').value.trim();
+    const email   = document.getElementById('s-email').value.trim();
+    const token   = document.getElementById('s-token').value.trim();
+    const pass    = document.getElementById('s-pass').value;
+    const pass2   = document.getElementById('s-pass2').value;
+
+    if (!domain || !email || !token || !pass || !pass2) {
+      showErr('Preencha todos os campos.'); return;
+    }
+    if (pass !== pass2) { showErr('As senhas não coincidem.'); return; }
+    if (pass.length < 6) { showErr('A senha deve ter pelo menos 6 caracteres.'); return; }
+
+    setLoading('btn-setup', true);
+    try {
+      const r = await fetch('/auth/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, email, token, password: pass, password2: pass2 })
+      });
+      const data = await r.json();
+      if (data.ok) {
+        showSucc('Configuração salva! Redirecionando...');
+        setTimeout(() => window.location.href = '/', 1000);
+      } else {
+        showErr(data.error || 'Erro ao configurar.');
+        setLoading('btn-setup', false);
+      }
+    } catch {
+      showErr('Erro de conexão com o servidor.');
+      setLoading('btn-setup', false);
+    }
+  }
+
+  async function doLogin(e) {
+    e.preventDefault();
+    clearMsgs();
+    const email = document.getElementById('l-email').value.trim();
+    const pass  = document.getElementById('l-pass').value;
+    if (!email || !pass) { showErr('Preencha todos os campos.'); return; }
+
+    setLoading('btn-login', true);
+    try {
+      const r = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+      const data = await r.json();
+      if (data.ok) {
+        showSucc('Acesso autorizado! Redirecionando...');
+        setTimeout(() => window.location.href = '/', 800);
+      } else {
+        showErr(data.error || 'Credenciais inválidas.');
+        setLoading('btn-login', false);
+      }
+    } catch {
+      showErr('Erro de conexão com o servidor.');
+      setLoading('btn-login', false);
+    }
+  }
+
+  // Tecla Enter no campo de token vai para senha
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('s-token')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('s-pass').focus(); }
+    });
+    init();
+  });
+</script>
+</body>
+</html>
