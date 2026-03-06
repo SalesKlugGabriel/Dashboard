@@ -413,7 +413,9 @@ function processAll() {
     const fLeads = S.leads.filter(l => !isBanned(l) && inRange(l.data_cad) &&
         (!imobFilter || l.imobiliaria?.nome === imobFilter));
 
-    const fVis = fLeads.filter(l => [8, 9].includes(l.situacao?.id));
+    const fVisAgendadas = fLeads.filter(l => l.situacao?.id === 9); // Visita Agendada (pendente)
+    const fVisEfetuadas = fLeads.filter(l => l.situacao?.id === 8); // Visita Realizada (efetuada)
+    const fVis = [...fVisAgendadas, ...fVisEfetuadas]; // total para funil
     const fSim = fLeads.filter(l => l.situacao?.id === 10 || l.qtde_simulacoes_associadas > 0);
     const fRes = fLeads.filter(l => l.qtde_reservas_associadas > 0);
     const fPerdidos = fLeads.filter(l => l.situacao?.id === 3);
@@ -444,7 +446,9 @@ function processAll() {
     const taxa = fLeads.length > 0 ? ((fVendas.length / fLeads.length) * 100).toFixed(1) : '0.0';
 
     S.metrics = {
-        leads: fLeads.length, visitas: fVis.length, sims: fSim.length,
+        leads: fLeads.length, visitas: fVis.length,
+        visAgendadas: fVisAgendadas.length, visEfetuadas: fVisEfetuadas.length,
+        sims: fSim.length,
         reservas: fRes.length, vendas: fVendas.length, vgv, taxa: parseFloat(taxa),
         ticketMedio, corretores: corrSet.size, perdidos: fPerdidos.length,
         simsAprovadas
@@ -452,7 +456,8 @@ function processAll() {
 
     // ── Update metric tiles
     st('m-leads', fN(fLeads.length));
-    st('m-visitas', fN(fVis.length));
+    st('m-vis-agend', fN(fVisAgendadas.length));
+    st('m-vis-efet', fN(fVisEfetuadas.length));
     st('m-sim', fN(fSim.length));
     st('m-sims-aprov', fN(simsAprovadas));
     st('m-res', fN(fRes.length));
@@ -469,7 +474,7 @@ function processAll() {
         const id = l.corretor?.id || l.gestor?.id || '__sem__';
         const nome = l.corretor?.nome || l.gestor?.nome || 'Não atribuído';
         if (isBannedNome(nome)) return;
-        if (!byC[id]) byC[id] = { id, nome, l: 0, vis: 0, s: 0, r: 0, v: 0, vgv: 0 };
+        if (!byC[id]) byC[id] = { id, nome, l: 0, visAgend: 0, visEfet: 0, anot: 0, s: 0, r: 0, v: 0, vgv: 0 };
         byC[id][tipo]++;
         if (tipo === 'v') byC[id].vgv += parseValor(l.valor_venda) || parseValor(l.valor_negocio);
     });
@@ -481,10 +486,19 @@ function processAll() {
         return inRange(l.data_venda || l.data_cad);
     });
     addToRanking(fLeads, 'l');
-    addToRanking(fVis, 'vis');
+    addToRanking(fVisAgendadas, 'visAgend');
+    addToRanking(fVisEfetuadas, 'visEfet');
     addToRanking(fSim, 's');
     addToRanking(fRes, 'r');
     addToRanking(fVendasLeads, 'v');
+    // Anotações por corretor
+    fLeads.forEach(l => {
+        const id = l.corretor?.id || l.gestor?.id || '__sem__';
+        const nome = l.corretor?.nome || l.gestor?.nome || 'Não atribuído';
+        if (isBannedNome(nome)) return;
+        if (!byC[id]) byC[id] = { id, nome, l: 0, visAgend: 0, visEfet: 0, anot: 0, s: 0, r: 0, v: 0, vgv: 0 };
+        byC[id].anot += (l.tarefa || []).filter(t => t.data_cad && inRange(t.data_cad)).length;
+    });
     S.ranking = Object.values(byC)
         .filter(c => c.nome !== 'Não atribuído' && (c.l > 0 || c.v > 0))
         .sort((a, b) => b.vgv - a.vgv || b.v - a.v || b.r - a.r || b.l - a.l);
@@ -521,9 +535,11 @@ function processAll() {
         const gid = l.gestor?.id;
         const gnome = l.gestor?.nome;
         if (!gid || !gnome || isDemo(gnome)) return;
-        if (!gestorMap[gid]) gestorMap[gid] = { id: gid, nome: gnome, l: 0, vis: 0, s: 0, r: 0, v: 0, vgv: 0, corretorIds: new Set() };
+        if (!gestorMap[gid]) gestorMap[gid] = { id: gid, nome: gnome, l: 0, visAgend: 0, visEfet: 0, anot: 0, s: 0, r: 0, v: 0, vgv: 0, corretorIds: new Set() };
         gestorMap[gid].l++;
-        if ([8, 9].includes(l.situacao?.id)) gestorMap[gid].vis++;
+        if (l.situacao?.id === 9) gestorMap[gid].visAgend++;
+        if (l.situacao?.id === 8) gestorMap[gid].visEfet++;
+        gestorMap[gid].anot += (l.tarefa || []).filter(t => t.data_cad && inRange(t.data_cad)).length;
         if (l.situacao?.id === 10 || l.qtde_simulacoes_associadas > 0) gestorMap[gid].s++;
         if (l.qtde_reservas_associadas > 0) gestorMap[gid].r++;
         if (l.corretor?.id) gestorMap[gid].corretorIds.add(String(l.corretor.id));
@@ -542,7 +558,7 @@ function processAll() {
     });
     S.rankGestores = Object.values(gestorMap).map(g => ({
         id: g.id, nome: g.nome,
-        l: g.l, vis: g.vis, s: g.s, r: g.r, v: g.v, vgv: g.vgv,
+        l: g.l, visAgend: g.visAgend, visEfet: g.visEfet, anot: g.anot, s: g.s, r: g.r, v: g.v, vgv: g.vgv,
         corretores: g.corretorIds.size,
         corretorIds: [...g.corretorIds]
     })).sort((a, b) => b.vgv - a.vgv || b.v - a.v || b.l - a.l);
@@ -673,12 +689,12 @@ function renderRankingEmpreendimentos(data) {
 function renderRankingGestores(data) {
     const medals = ['🥇', '🥈', '🥉'];
     const thead = document.getElementById('rank-thead');
-    if (thead) thead.innerHTML = '<tr><th>#</th><th>Gestor</th><th>Corretores</th><th>Leads</th><th>Vendas</th><th>VGV</th></tr>';
+    if (thead) thead.innerHTML = '<tr><th>#</th><th>Gestor</th><th>Corretores</th><th>Leads</th><th>Vis. Agend.</th><th>Vis. Efet.</th><th>Anotações</th><th>Vendas</th><th>VGV</th></tr>';
     const tb = document.getElementById('rank-tbody');
     const mb = document.getElementById('rank-mob');
     tb.innerHTML = ''; mb.innerHTML = '';
     if (!data || !data.length) {
-        tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--txm);padding:2rem">Nenhum dado para o período.</td></tr>';
+        tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--txm);padding:2rem">Nenhum dado para o período.</td></tr>';
         return;
     }
     data.forEach((g, i) => {
@@ -688,6 +704,9 @@ function renderRankingGestores(data) {
       <td><strong>${esc(g.nome)}</strong></td>
       <td style="color:var(--txm)">${g.corretores}</td>
       <td>${g.l}</td>
+      <td>${g.visAgend||0}</td>
+      <td>${g.visEfet||0}</td>
+      <td>${g.anot||0}</td>
       <td>${g.v}</td>
       <td><strong style="color:var(--gt)">${fVgvFmt(g.vgv)}</strong></td>`;
         tb.appendChild(tr);
@@ -697,6 +716,9 @@ function renderRankingGestores(data) {
       <div class="rc-s">
         <div><div class="rsl">Corretores</div><div class="rsv">${g.corretores}</div></div>
         <div><div class="rsl">Leads</div><div class="rsv">${g.l}</div></div>
+        <div><div class="rsl">Vis. Agend.</div><div class="rsv">${g.visAgend||0}</div></div>
+        <div><div class="rsl">Vis. Efet.</div><div class="rsv">${g.visEfet||0}</div></div>
+        <div><div class="rsl">Anotações</div><div class="rsv">${g.anot||0}</div></div>
         <div><div class="rsl">Vendas</div><div class="rsv">${g.v}</div></div>
         <div><div class="rsl">VGV</div><div class="rsv">${fVgvFmt(g.vgv)}</div></div>
       </div>`;
@@ -877,10 +899,10 @@ function loadInd(id) {
     document.getElementById('ind-nome').textContent = nome;
     document.getElementById('ind-per').textContent = `Performance — ${getPeriodLabel()}`;
     if (!c) {
-        ['i-l','i-vis','i-s','i-r','i-v'].forEach(k=>st(k,'0'));
+        ['i-l','i-vis-agend','i-vis-efet','i-anot','i-s','i-r','i-v'].forEach(k=>st(k,'0'));
         st('i-tx','0%'); st('i-vgv','R$ 0'); st('i-tkt','R$ 0'); st('i-rnk','—'); return;
     }
-    st('i-l',String(c.l)); st('i-vis',String(c.vis||0)); st('i-s',String(c.s)); st('i-r',String(c.r)); st('i-v',String(c.v));
+    st('i-l',String(c.l)); st('i-vis-agend',String(c.visAgend||0)); st('i-vis-efet',String(c.visEfet||0)); st('i-anot',String(c.anot||0)); st('i-s',String(c.s)); st('i-r',String(c.r)); st('i-v',String(c.v));
     st('i-tx', c.l>0 ? ((c.v/c.l)*100).toFixed(1)+'%' : '0%');
     st('i-vgv', fVgvFmt(c.vgv));
     st('i-tkt', fVgvFmt(c.v>0 ? Math.round(c.vgv/c.v) : 0));
@@ -895,7 +917,7 @@ function renderIndCharts(c) {
         type:'bar',
         data:{
             labels:['Leads','Visitas','Simulações','Reservas','Vendas'],
-            datasets:[{ data:[c.l,c.vis||0,c.s,c.r,c.v], backgroundColor:[hexToRgba(C_LEADS,.85),hexToRgba(GT,.8),hexToRgba(C_SIMS,.85),hexToRgba(C_RES,.8),hexToRgba(C_VEND,.85)], borderRadius:4 }]
+            datasets:[{ data:[c.l,(c.visAgend||0)+(c.visEfet||0),c.s,c.r,c.v], backgroundColor:[hexToRgba(C_LEADS,.85),hexToRgba(GT,.8),hexToRgba(C_SIMS,.85),hexToRgba(C_RES,.8),hexToRgba(C_VEND,.85)], borderRadius:4 }]
         },
         options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, grid:{ color:THEME.surface2||'#2a2a2a' } }, x:{ grid:{ display:false } } } }
     });
@@ -934,10 +956,10 @@ function loadGestor(gid) {
     document.getElementById('gestor-nome').textContent = g ? g.nome : 'Gestor';
     document.getElementById('gestor-per').textContent = `Performance da Equipe — ${getPeriodLabel()}`;
     if (!g) {
-        ['g-l','g-vis','g-s','g-r','g-v'].forEach(k => st(k, '0'));
+        ['g-l','g-vis-agend','g-vis-efet','g-anot','g-s','g-r','g-v'].forEach(k => st(k, '0'));
         st('g-tx','0%'); st('g-vgv','R$ 0'); st('g-tkt','R$ 0'); st('g-corr','0'); return;
     }
-    st('g-l', String(g.l)); st('g-vis', String(g.vis||0)); st('g-s', String(g.s)); st('g-r', String(g.r)); st('g-v', String(g.v));
+    st('g-l', String(g.l)); st('g-vis-agend', String(g.visAgend||0)); st('g-vis-efet', String(g.visEfet||0)); st('g-anot', String(g.anot||0)); st('g-s', String(g.s)); st('g-r', String(g.r)); st('g-v', String(g.v));
     st('g-tx', g.l > 0 ? ((g.v/g.l)*100).toFixed(1)+'%' : '0%');
     st('g-vgv', fVgvFmt(g.vgv));
     st('g-tkt', fVgvFmt(g.v > 0 ? Math.round(g.vgv/g.v) : 0));
@@ -952,7 +974,7 @@ function renderGestorCharts(g) {
         type: 'bar',
         data: {
             labels: ['Leads','Visitas','Simulações','Reservas','Vendas'],
-            datasets: [{ data:[g.l,g.vis||0,g.s,g.r,g.v], backgroundColor:[hexToRgba(C_LEADS,.85),hexToRgba(GT,.8),hexToRgba(C_SIMS,.85),hexToRgba(C_RES,.8),hexToRgba(C_VEND,.85)], borderRadius:4 }]
+            datasets: [{ data:[g.l,(g.visAgend||0)+(g.visEfet||0),g.s,g.r,g.v], backgroundColor:[hexToRgba(C_LEADS,.85),hexToRgba(GT,.8),hexToRgba(C_SIMS,.85),hexToRgba(C_RES,.8),hexToRgba(C_VEND,.85)], borderRadius:4 }]
         },
         options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, grid:{ color:THEME.surface2||'#2a2a2a' } }, x:{ grid:{ display:false } } } }
     });
@@ -985,7 +1007,8 @@ function renderGestorCharts(g) {
 // ════════════════════════════════════════════════
 const LIVE_INDICATORS = [
     { key:'leads',         emoji:'📊', label:'LEADS',               sub:'Atendimentos no período',        fmt: v=>fN(v) },
-    { key:'visitas',       emoji:'🏃', label:'VISITAS AO ESTANDE',   sub:'Visitas realizadas',              fmt: v=>fN(v) },
+    { key:'visAgendadas',  emoji:'📅', label:'VISITAS AGENDADAS',    sub:'Visitas com status Pendente',      fmt: v=>fN(v) },
+    { key:'visEfetuadas',  emoji:'🏃', label:'VISITAS EFETUADAS',    sub:'Visitas com status Concluído',     fmt: v=>fN(v) },
     { key:'sims',          emoji:'🧮', label:'SIMULAÇÕES',           sub:'Simulações realizadas',            fmt: v=>fN(v) },
     { key:'simsAprovadas', emoji:'✔️', label:'SIMULAÇÕES APROVADAS', sub:'Simulações com status aprovado',  fmt: v=>fN(v) },
     { key:'reservas',      emoji:'📋', label:'RESERVAS',             sub:'Unidades reservadas',             fmt: v=>fN(v) },
