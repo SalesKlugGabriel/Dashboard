@@ -1026,10 +1026,12 @@ let liveTmr = null;
 let liveTabActive = false;
 
 function initLiveDots() {
-    const container = document.getElementById('live-dots');
-    container.innerHTML = LIVE_INDICATORS.map((_, i) =>
-        `<div class="live-dot${i===liveIdx?' on':''}" onclick="liveGoTo(${i})"></div>`
+    const sel = document.getElementById('live-indicator-sel');
+    if (!sel) return;
+    sel.innerHTML = LIVE_INDICATORS.map((ind, i) =>
+        `<option value="${i}">${ind.emoji} ${ind.label}</option>`
     ).join('');
+    sel.value = liveIdx;
 }
 
 function updateLiveCRMValues() {
@@ -1050,9 +1052,8 @@ function renderLiveSlide(idx, animate = true) {
     st('live-label', ind.label);
     st('live-value', val);
     st('live-sub', ind.sub);
-    document.querySelectorAll('.live-dot').forEach((d, i) => d.classList.toggle('on', i === idx));
-    const fill = document.getElementById('live-fill');
-    if (fill) { fill.style.transition='none'; fill.style.width='0%'; }
+    const sel = document.getElementById('live-indicator-sel');
+    if (sel) sel.value = idx;
 }
 
 function liveGoTo(idx) {
@@ -1069,18 +1070,13 @@ function startLiveTimer() {
     clearInterval(liveTmr);
     let elapsed = 0;
     const total = liveSecs * 1000;
-    const fill = document.getElementById('live-fill');
-    if (fill) { fill.style.transition='none'; fill.style.width='0%'; }
     liveTmr = setInterval(() => {
         if (!liveTabActive) { clearInterval(liveTmr); return; }
         elapsed += 100;
-        const pct = Math.min(elapsed / total * 100, 100);
-        if (fill) { fill.style.transition='width .1s linear'; fill.style.width=pct+'%'; }
         if (elapsed >= total) {
             elapsed = 0;
             liveIdx = (liveIdx + 1) % LIVE_INDICATORS.length;
             renderLiveSlide(liveIdx);
-            if (fill) { fill.style.transition='none'; fill.style.width='0%'; }
         }
     }, 100);
 }
@@ -1113,14 +1109,18 @@ document.addEventListener('fullscreenchange', () => {
     }
 });
 
-// Speed selector
-document.querySelectorAll('.live-spd').forEach(b => b.addEventListener('click', function () {
-    document.querySelectorAll('.live-spd').forEach(x => x.classList.remove('on'));
-    this.classList.add('on');
-    liveSecs = parseInt(this.dataset.secs);
+function setLiveSecs(secs) {
+    liveSecs = secs;
     LS.set('liveSecs', liveSecs);
     if (liveTabActive) restartLiveTimer();
-}));
+}
+
+// Restore saved speed in select on load
+(function () {
+    const saved = OPTS.liveCrmSecs || 5;
+    const sel = document.getElementById('live-speed-sel');
+    if (sel) sel.value = saved;
+})();
 
 // ════════════════════════════════════════════════
 // 🎉 SALE ANIMATION

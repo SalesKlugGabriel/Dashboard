@@ -154,35 +154,21 @@
     .err-box strong, .cors-notice strong { display: block; margin-bottom: .3rem; color: #f06060 }
 
     /* ═══════════════════════════════════════════
-       LIVE CRM CAROUSEL (Fullscreen)
+       LIVE CRM — Fullscreen
     ═══════════════════════════════════════════ */
-    .live-wrap { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; min-height: calc(100vh - 200px); justify-content: center; padding: 2rem }
-    .live-speed-bar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; justify-content: center }
-    .live-speed-bar span { font-size: .78rem; color: var(--txm); font-weight: 600 }
-    .live-spd { background: var(--bg); border: 1px solid var(--s2); border-radius: 20px; padding: .3rem .9rem; font-size: .75rem; color: var(--txm); cursor: pointer; transition: .2s }
-    .live-spd:hover { border-color: var(--gt); color: var(--gt) }
-    .live-spd.on { background: var(--gt); color: #fff; border-color: var(--gt); font-weight: 600 }
-    .live-stage { display: flex; align-items: center; gap: 1.5rem; width: 100%; max-width: 700px }
-    .live-nav { background: var(--s1); border: 1px solid var(--s2); border-radius: 50%; width: 48px; height: 48px; font-size: 1.2rem; cursor: pointer; color: var(--txm); flex-shrink: 0; transition: .2s; display: flex; align-items: center; justify-content: center }
-    .live-nav:hover { border-color: var(--gt); color: var(--gt) }
-    .live-card { flex: 1; background: var(--s1); border: 2px solid var(--s2); border-radius: 16px; padding: 3rem 2rem 2rem; text-align: center; position: relative; overflow: hidden; transition: border-color .3s }
-    .live-card:hover { border-color: var(--gt) }
-    .live-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--gt) }
-    .live-emoji { font-size: 3rem; margin-bottom: .8rem; line-height: 1 }
-    .live-label { font-size: .75rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--txm); margin-bottom: 1rem }
-    .live-value { font-size: clamp(2.5rem, 8vw, 5rem); font-weight: 900; color: var(--gt); line-height: 1; margin-bottom: .8rem; transition: all .3s }
-    .live-sub { font-size: .8rem; color: var(--txs); margin-bottom: 1.5rem }
-    .live-progress-wrap { width: 100%; background: var(--s2); border-radius: 4px; height: 4px; overflow: hidden }
-    .live-fill { height: 100%; width: 0; background: var(--gt); transition: width .1s linear }
-    .live-dots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap }
-    .live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--s2); cursor: pointer; transition: .2s }
-    .live-dot.on { background: var(--gt); transform: scale(1.3) }
-    .live-dot:hover { background: var(--gdk) }
-    .live-hint { font-size: .7rem; color: var(--txs); text-align: center; opacity: .7 }
-    @keyframes slideIn { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
-    .live-card.anim { animation: slideIn .35s ease-out }
-
-    /* Fullscreen override for Live CRM */
+    .live-wrap { position: relative; min-height: calc(100vh - 180px); display: flex; align-items: center; justify-content: center }
+    .live-card { text-align: center; padding: 2rem; width: 100%; user-select: none }
+    .live-emoji { font-size: clamp(3rem, 6vw, 5rem); margin-bottom: 1.5rem; line-height: 1 }
+    .live-label { font-size: clamp(.75rem, 1.5vw, 1rem); font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--txm); margin-bottom: 1.5rem }
+    .live-value { font-size: clamp(5rem, 18vw, 12rem); font-weight: 900; color: var(--gt); line-height: 1; margin-bottom: 1rem }
+    .live-sub { font-size: clamp(.8rem, 1.5vw, 1rem); color: var(--txs) }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(30px) } to { opacity: 1; transform: translateY(0) } }
+    .live-card.anim { animation: slideIn .4s ease-out }
+    /* Discrete bottom-left control */
+    .live-ctrl { position: absolute; bottom: 1.5rem; left: 1.5rem; display: flex; align-items: center; gap: .4rem }
+    .live-ctrl select { background: rgba(30,30,30,.7); border: 1px solid var(--s2); border-radius: 6px; color: var(--txm); font-size: .68rem; padding: .25rem .4rem; cursor: pointer; outline: none; backdrop-filter: blur(4px); transition: border-color .2s }
+    .live-ctrl select:hover, .live-ctrl select:focus { border-color: var(--gt) }
+    /* Fullscreen override */
     :fullscreen .hd, :fullscreen .nav, :fullscreen .abar, :fullscreen .pbar,
     :-webkit-full-screen .hd, :-webkit-full-screen .nav, :-webkit-full-screen .abar, :-webkit-full-screen .pbar { display: none }
     :fullscreen #tab-livecrm, :-webkit-full-screen #tab-livecrm { min-height: 100vh; background: var(--bg) }
@@ -218,10 +204,6 @@
       .pbar { padding: .5rem 1rem }
       .nav { padding: 0 1rem }
       .live-wrap { padding: 1rem }
-      .live-stage { gap: .5rem }
-    }
-    @media(max-width:500px) {
-      .live-nav { width: 36px; height: 36px; font-size: 1rem }
     }
 
     /* ═══════════════════════════════════════════
@@ -495,29 +477,22 @@
   <!-- TAB: LIVE CRM -->
   <div class="tabc" id="tab-livecrm">
     <div class="live-wrap">
-      <div class="live-speed-bar">
-        <span>Tempo por indicador:</span>
-        <button class="live-spd" data-secs="3">3s</button>
-        <button class="live-spd on" data-secs="5">5s</button>
-        <button class="live-spd" data-secs="10">10s</button>
-        <button class="live-spd" data-secs="20">20s</button>
-        <button class="live-spd" data-secs="30">30s</button>
+      <div class="live-card" id="live-card">
+        <div class="live-emoji" id="live-emoji">&#128202;</div>
+        <div class="live-label" id="live-label">CARREGANDO...</div>
+        <div class="live-value" id="live-value">&#8212;</div>
+        <div class="live-sub" id="live-sub">Aguarde...</div>
       </div>
-      <div class="live-stage">
-        <button class="live-nav" id="live-prev" onclick="liveNav(-1)">&#9664;</button>
-        <div class="live-card" id="live-card">
-          <div class="live-emoji" id="live-emoji">&#128202;</div>
-          <div class="live-label" id="live-label">CARREGANDO...</div>
-          <div class="live-value" id="live-value">&#8212;</div>
-          <div class="live-sub" id="live-sub">Aguarde...</div>
-          <div class="live-progress-wrap">
-            <div class="live-fill" id="live-fill"></div>
-          </div>
-        </div>
-        <button class="live-nav" id="live-next" onclick="liveNav(1)">&#9654;</button>
+      <div class="live-ctrl">
+        <select id="live-indicator-sel" onchange="liveGoTo(+this.value)" title="Indicador"></select>
+        <select id="live-speed-sel" onchange="setLiveSecs(+this.value)" title="Velocidade">
+          <option value="3">3s</option>
+          <option value="5" selected>5s</option>
+          <option value="10">10s</option>
+          <option value="20">20s</option>
+          <option value="30">30s</option>
+        </select>
       </div>
-      <div class="live-dots" id="live-dots"></div>
-      <div class="live-hint">Pressione Esc para sair da tela cheia</div>
     </div>
   </div>
 
@@ -591,7 +566,7 @@
     </div>
   </div>
 
-  <script src="config.js?v=14"></script>
-  <script src="app.js?v=14"></script>
+  <script src="config.js?v=15"></script>
+  <script src="app.js?v=15"></script>
 </body>
 </html>
