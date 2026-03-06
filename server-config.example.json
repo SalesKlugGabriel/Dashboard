@@ -1,0 +1,6 @@
+{
+    "domain": "SUAEMPRESA.cvcrm.com.br",
+    "port": 3000,
+    "email": "seu-email@empresa.com",
+    "token": "SEU_TOKEN_CVCRM_AQUI"
+}
