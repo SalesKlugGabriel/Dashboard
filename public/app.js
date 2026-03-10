@@ -423,6 +423,7 @@ function processAll() {
     // ── Vendas e VGV (fonte: S.reservas)
     const fVendas = Object.values(S.reservas).filter(r => {
         if (!r || r.situacao?.idsituacao !== 3) return false;
+        if (isDemo(r.corretor?.corretor) || isDemo(r.corretor?.imobiliaria)) return false;
         if (imobFilter && r.corretor?.imobiliaria !== imobFilter) return false;
         const dt = r.data_venda || r.data;
         return inRange(dt);
@@ -497,7 +498,7 @@ function processAll() {
         const nome = l.corretor?.nome || l.gestor?.nome || 'Não atribuído';
         if (isBannedNome(nome)) return;
         if (!byC[id]) byC[id] = { id, nome, l: 0, visAgend: 0, visEfet: 0, anot: 0, s: 0, r: 0, v: 0, vgv: 0 };
-        byC[id].anot += (l.tarefa || []).filter(t => t.data_cad && inRange(t.data_cad)).length;
+        byC[id].anot += (l.interacao || []).filter(t => t.data_cad && inRange(t.data_cad)).length;
     });
     S.ranking = Object.values(byC)
         .filter(c => c.nome !== 'Não atribuído' && (c.l > 0 || c.v > 0))
@@ -539,7 +540,7 @@ function processAll() {
         gestorMap[gid].l++;
         if (l.situacao?.id === 9) gestorMap[gid].visAgend++;
         if (l.situacao?.id === 8) gestorMap[gid].visEfet++;
-        gestorMap[gid].anot += (l.tarefa || []).filter(t => t.data_cad && inRange(t.data_cad)).length;
+        gestorMap[gid].anot += (l.interacao || []).filter(t => t.data_cad && inRange(t.data_cad)).length;
         if (l.situacao?.id === 10 || l.qtde_simulacoes_associadas > 0) gestorMap[gid].s++;
         if (l.qtde_reservas_associadas > 0) gestorMap[gid].r++;
         if (l.corretor?.id) gestorMap[gid].corretorIds.add(String(l.corretor.id));
